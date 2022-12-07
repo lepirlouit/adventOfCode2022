@@ -1,6 +1,6 @@
 const fs = require('fs');
-const contentBuffer = fs.readFileSync('./day7Test.txt');
-//const contentBuffer = fs.readFileSync('./day7Input.txt');
+// const contentBuffer = fs.readFileSync('./day7Test.txt');
+const contentBuffer = fs.readFileSync('./day7Input.txt');
 const content = contentBuffer.toString();
 const lines = content.split('\n');
 
@@ -68,4 +68,45 @@ for (const line of lines) {
 	}
 }
 
-console.log(JSON.stringify(structure, null, 2));
+let totalSize = 0;
+const getFolderSize = (folder, path) => {
+	const entries = Object.entries(folder);
+	let size = 0;
+	for (const [key, value] of entries) {
+		if (key === "files")
+			size += value.reduce((acc, elt) => acc + elt, 0);
+		else
+			size += getFolderSize(folder[key], [...path, key])
+	}
+	folder.size = size;
+	folder.path = path.join("/") + "/";
+	if (size < 100000) {
+		console.log({ size, path: folder.path });
+		totalSize += size;
+	}
+
+	return size;
+}
+
+getFolderSize(structure, [""]);
+
+const freeSize = 70000000 - structure.size;
+const sizeToFree = 30000000 - freeSize;
+
+let folderToBeRemoved = structure;
+const findSmallest = (folder) => {
+	const entries = Object.entries(folder);
+	for (const [key, value] of entries) {
+		if (folder.size > sizeToFree && folderToBeRemoved.size > folder.size) {
+			folderToBeRemoved = folder;
+		}
+		if (["files", "size", "path"].includes(key))
+			continue;
+		findSmallest(folder[key]);
+	}
+}
+
+findSmallest(structure);
+
+console.log({ totalSize, freeSize, sizeToFree, folderToBeRemoved: { size: folderToBeRemoved.size, path: folderToBeRemoved.path } });
+// console.log(JSON.stringify(structure, null, 2));
